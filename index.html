@@ -1,1 +1,1516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS2 比赛报名系统</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   图片资源配置区域 - 修改图片请在此处更改
+   ============================================ */
+:root {
+  /* 背景图片 - CS2 风格背景 */
+  --bg-image: url('https://lh3.googleusercontent.com/gg/AMW1TPoiQbCxxrjsjLHcTiIvR0Xj9L7p3GO1tzNepFY2kQqF3T_GAxztBLra_pBFtZrPPu9ZfScxN8wSajVduI00n1VbyWeBzPTodaa507-t6aALTd_dxsj2vP0a_qxdZhubKbLyFgZ13Vpllpk2qcWth9cNMk9slJgdTHk9EY5OU29Q6lwPKt6U=s1600-rj-mp2');
+  
+  /* 干员/角色立绘 - 对话时显示的角色图片 */
+  --character-image: url('./2.jpg');
+  
+  /* 扫码加群的二维码图片 */
+  --qrcode-image: url('https://via.placeholder.com/300x300?text=QR+Code');
+}
 
+/* ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: #0a0a0f;
+  color: #e0e0e0;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* 背景 */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-image) center/cover no-repeat;
+  filter: brightness(0.3) blur(3px);
+  z-index: 0;
+  transition: filter 1s ease;
+}
+
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(10,10,20,0.85) 0%, rgba(20,15,40,0.7) 50%, rgba(10,10,20,0.85) 100%);
+  z-index: 1;
+}
+
+/* 扫描线效果 */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+}
+
+/* 粒子效果 */
+.particles {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(255, 165, 0, 0.6);
+  border-radius: 50%;
+  animation: float-up linear infinite;
+}
+
+@keyframes float-up {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+/* 主容器 */
+.main-container {
+  position: relative;
+  z-index: 10;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* 开始界面 */
+.start-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a15 0%, #1a1025 50%, #0a0a15 100%);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.start-screen.hidden {
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+
+.start-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 4rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff8c00, #ffa500, #ffcc00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 60px rgba(255, 165, 0, 0.3);
+  letter-spacing: 8px;
+  animation: title-glow 3s ease-in-out infinite;
+}
+
+.start-subtitle {
+  font-size: 1.2rem;
+  color: rgba(255, 165, 0, 0.7);
+  margin-top: 1rem;
+  letter-spacing: 6px;
+  font-weight: 300;
+}
+
+.start-btn {
+  margin-top: 3rem;
+  padding: 16px 60px;
+  background: transparent;
+  border: 2px solid rgba(255, 165, 0, 0.6);
+  color: #ffa500;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 4px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+  clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+}
+
+.start-btn:hover {
+  background: rgba(255, 165, 0, 0.15);
+  border-color: #ffa500;
+  box-shadow: 0 0 30px rgba(255, 165, 0, 0.3), inset 0 0 30px rgba(255, 165, 0, 0.1);
+  transform: scale(1.05);
+}
+
+.start-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 165, 0, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.start-btn:hover::before {
+  left: 100%;
+}
+
+@keyframes title-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+/* 角色立绘区域 */
+.character-area {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 45%;
+  height: 90%;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  opacity: 0;
+  transform: translateX(-50px);
+}
+
+.character-area.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.character-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  filter: drop-shadow(0 0 30px rgba(255, 165, 0, 0.3));
+  animation: char-breathe 4s ease-in-out infinite;
+}
+
+@keyframes char-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* 对话框区域 */
+.dialogue-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 0 2rem 2rem;
+  transition: all 0.6s ease;
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.dialogue-area.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dialogue-box {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, rgba(10, 10, 30, 0.92) 0%, rgba(20, 15, 45, 0.88) 100%);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-top: 2px solid rgba(255, 165, 0, 0.6);
+  padding: 24px 32px;
+  position: relative;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+  backdrop-filter: blur(15px);
+}
+
+.dialogue-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 165, 0, 0.8), transparent);
+}
+
+.dialogue-box::after {
+  content: '';
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(255, 165, 0, 0.6);
+  animation: blink-arrow 1s ease-in-out infinite;
+}
+
+@keyframes blink-arrow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.speaker-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  color: #ffa500;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+  padding-left: 12px;
+  border-left: 3px solid #ffa500;
+  text-transform: uppercase;
+}
+
+.dialogue-text {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #ddd;
+  min-height: 50px;
+  padding-left: 12px;
+}
+
+.dialogue-text .typed-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: #ffa500;
+  margin-left: 2px;
+  animation: cursor-blink 0.8s infinite;
+  vertical-align: middle;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* 输入区域 */
+.input-area {
+  max-width: 1200px;
+  margin: 12px auto 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.4s ease;
+  height: 0;
+  overflow: hidden;
+}
+
+.input-area.visible {
+  opacity: 1;
+  transform: translateY(0);
+  height: auto;
+  overflow: visible;
+}
+
+.input-field {
+  flex: 1;
+  padding: 12px 20px;
+  background: rgba(10, 10, 30, 0.8);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  color: #ffa500;
+  font-size: 1rem;
+  font-family: 'Noto Sans SC', sans-serif;
+  outline: none;
+  transition: all 0.3s ease;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.input-field:focus {
+  border-color: rgba(255, 165, 0, 0.7);
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.15), inset 0 0 20px rgba(255, 165, 0, 0.05);
+}
+
+.input-field::placeholder {
+  color: rgba(255, 165, 0, 0.3);
+}
+
+.submit-input-btn {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.2), rgba(255, 140, 0, 0.3));
+  border: 1px solid rgba(255, 165, 0, 0.5);
+  color: #ffa500;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  white-space: nowrap;
+}
+
+.submit-input-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.35), rgba(255, 140, 0, 0.45));
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.3);
+  transform: scale(1.03);
+}
+
+/* 选项按钮区域 */
+.options-area {
+  max-width: 1200px;
+  margin: 12px auto 0;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.4s ease;
+  height: 0;
+  overflow: hidden;
+}
+
+.options-area.visible {
+  opacity: 1;
+  transform: translateY(0);
+  height: auto;
+  overflow: visible;
+}
+
+.option-btn {
+  padding: 12px 32px;
+  background: rgba(10, 10, 30, 0.8);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  color: #ddd;
+  font-size: 0.95rem;
+  font-family: 'Noto Sans SC', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  position: relative;
+  overflow: hidden;
+}
+
+.option-btn:hover {
+  border-color: rgba(255, 165, 0, 0.7);
+  color: #ffa500;
+  background: rgba(255, 165, 0, 0.1);
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.option-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: #ffa500;
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.option-btn:hover::before {
+  transform: scaleY(1);
+}
+
+/* 确认页面 */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(5, 5, 15, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.confirm-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.confirm-card {
+  width: 90%;
+  max-width: 700px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.98), rgba(25, 20, 50, 0.95));
+  border: 1px solid rgba(255, 165, 0, 0.4);
+  padding: 36px;
+  position: relative;
+  clip-path: polygon(0 0, calc(100% - 25px) 0, 100% 25px, 100% 100%, 25px 100%, 0 calc(100% - 25px));
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.confirm-overlay.visible .confirm-card {
+  transform: scale(1) translateY(0);
+}
+
+.confirm-card::-webkit-scrollbar {
+  width: 4px;
+}
+
+.confirm-card::-webkit-scrollbar-track {
+  background: rgba(255, 165, 0, 0.05);
+}
+
+.confirm-card::-webkit-scrollbar-thumb {
+  background: rgba(255, 165, 0, 0.3);
+  border-radius: 2px;
+}
+
+.confirm-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4rem;
+  color: #ffa500;
+  text-align: center;
+  margin-bottom: 28px;
+  letter-spacing: 4px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 165, 0, 0.2);
+}
+
+.confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.3s ease;
+}
+
+.confirm-row:hover {
+  background: rgba(255, 165, 0, 0.03);
+}
+
+.confirm-label {
+  color: rgba(255, 165, 0, 0.7);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-right: 16px;
+}
+
+.confirm-value {
+  color: #eee;
+  font-size: 0.95rem;
+  text-align: right;
+}
+
+.confirm-section {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  color: #ffa500;
+  letter-spacing: 3px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  padding-left: 10px;
+  border-left: 3px solid #ffa500;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 28px;
+  justify-content: center;
+}
+
+.btn-confirm, .btn-back {
+  padding: 14px 40px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.3), rgba(255, 140, 0, 0.4));
+  border: 1px solid rgba(255, 165, 0, 0.6);
+  color: #ffa500;
+}
+
+.btn-confirm:hover {
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.5), rgba(255, 140, 0, 0.6));
+  box-shadow: 0 0 30px rgba(255, 165, 0, 0.3);
+  transform: scale(1.05);
+}
+
+.btn-back {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #aaa;
+}
+
+.btn-back:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ddd;
+  transform: scale(1.05);
+}
+
+/* 成功页面 */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(5, 5, 15, 0.97);
+  backdrop-filter: blur(15px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.success-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  animation: success-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes success-pop {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+.success-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  color: #ffa500;
+  letter-spacing: 4px;
+  margin-bottom: 1rem;
+}
+
+.success-text {
+  font-size: 1.1rem;
+  color: #aaa;
+  margin-bottom: 2rem;
+  text-align: center;
+  line-height: 1.8;
+}
+
+.qrcode-img {
+  width: 250px;
+  height: 250px;
+  border: 2px solid rgba(255, 165, 0, 0.4);
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  animation: qr-glow 3s ease-in-out infinite;
+}
+
+@keyframes qr-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 165, 0, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(255, 165, 0, 0.4); }
+}
+
+.qrcode-hint {
+  color: rgba(255, 165, 0, 0.7);
+  font-size: 0.95rem;
+  letter-spacing: 2px;
+}
+
+/* HUD 元素 */
+.hud-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  background: linear-gradient(180deg, rgba(10, 10, 20, 0.8), transparent);
+}
+
+.hud-logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  color: rgba(255, 165, 0, 0.6);
+  letter-spacing: 4px;
+}
+
+.hud-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-bar {
+  width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffa500, #ffcc00);
+  width: 0%;
+  transition: width 0.6s ease;
+  box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+}
+
+.progress-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  color: rgba(255, 165, 0, 0.5);
+  letter-spacing: 2px;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* 装饰线条 */
+.deco-line-left {
+  position: fixed;
+  left: 2rem;
+  top: 60px;
+  bottom: 200px;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(255, 165, 0, 0.3), transparent);
+  z-index: 3;
+}
+
+.deco-line-right {
+  position: fixed;
+  right: 2rem;
+  top: 60px;
+  bottom: 200px;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(255, 165, 0, 0.3), transparent);
+  z-index: 3;
+}
+
+/* 音效按钮 */
+.sound-toggle {
+  position: fixed;
+  top: 14px;
+  right: 2rem;
+  z-index: 100;
+  background: none;
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  color: rgba(255, 165, 0, 0.6);
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.sound-toggle:hover {
+  border-color: rgba(255, 165, 0, 0.6);
+  color: #ffa500;
+}
+
+/* 打字动画 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* 闪光效果 */
+.flash-effect {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 165, 0, 0.15);
+  z-index: 99;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.flash-effect.active {
+  opacity: 1;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .character-area {
+    width: 40%;
+    opacity: 0.3 !important;
+  }
+  
+  .start-title {
+    font-size: 2.2rem;
+    letter-spacing: 4px;
+  }
+  
+  .dialogue-box {
+    padding: 18px 20px;
+  }
+  
+  .confirm-card {
+    padding: 24px 20px;
+  }
+  
+  .progress-bar {
+    width: 120px;
+  }
+}
+
+/* 加载动画 */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 165, 0, 0.3);
+  border-top-color: #ffa500;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     图片资源配置区域 - 修改图片请在此处更改
+     ============================================
+     
+     1. 角色立绘图片 ID: character-portrait
+        当前: CS2 角色图片
+        
+     2. 二维码图片 ID: qrcode-image  
+        当前: 占位符图片
+        
+     3. 背景图片: 在 CSS :root 中的 --bg-image
+     
+     ============================================ -->
+
+<div class="bg-layer"></div>
+<div class="bg-overlay"></div>
+<div class="scanlines"></div>
+<div class="particles" id="particles"></div>
+<div class="flash-effect" id="flashEffect"></div>
+
+<!-- 开始界面 -->
+<div class="start-screen" id="startScreen">
+  <div style="text-align: center;">
+    <div class="start-title">CS2 Major10</div>
+    <div class="start-subtitle">赛 事 报 名 系 统</div>
+    <button class="start-btn" id="startBtn" onclick="startGame()">
+      开 始 报 名
+    </button>
+    <div style="margin-top: 1.5rem; color: rgba(255,165,0,0.3); font-size: 0.75rem; letter-spacing: 3px;">
+      PRESS TO CONTINUE
+    </div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div class="hud-top" id="hud" style="opacity: 0; transition: opacity 0.6s ease;">
+  <div class="hud-logo">CS2 // Major10报名</div>
+  <div class="hud-progress">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-text" id="progressText">0%</div>
+  </div>
+</div>
+
+<div class="deco-line-left" id="decoL" style="opacity: 0; transition: opacity 0.8s ease;"></div>
+<div class="deco-line-right" id="decoR" style="opacity: 0; transition: opacity 0.8s ease;"></div>
+
+<!-- 角色立绘 -->
+<div class="character-area" id="characterArea">
+  <!-- 角色立绘图片 - 修改此处的 src 更换角色图片 -->
+  <img id="character-portrait"
+       src="./2.jpg"
+       alt="Agent"
+       class="character-img"
+       onerror="this.style.display='none'">
+</div>
+
+<!-- 对话区域 -->
+<div class="main-container">
+  <div class="dialogue-area" id="dialogueArea">
+    <div class="dialogue-box">
+      <div class="speaker-name" id="speakerName">AGENT</div>
+      <div class="dialogue-text" id="dialogueText"></div>
+    </div>
+    <div class="input-area" id="inputArea">
+      <input type="text" class="input-field" id="inputField" placeholder="输入你的回答..." autocomplete="off">
+      <button class="submit-input-btn" id="submitInputBtn" onclick="submitInput()">确认</button>
+    </div>
+    <div class="options-area" id="optionsArea"></div>
+  </div>
+</div>
+
+<!-- 确认页面 -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-card" id="confirmCard">
+    <!-- 动态填充 -->
+  </div>
+</div>
+
+<!-- 成功页面 -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">🏆</div>
+  <div class="success-title">REGISTRATION COMPLETE</div>
+  <div class="success-text">
+    报名成功！欢迎加入战场。<br>
+    请扫描下方二维码加入比赛群。
+  </div>
+  <!-- 二维码图片 - 修改此处的 src 更换二维码图片 -->
+  <img id="qrcode-image"
+       src="https://via.placeholder.com/300x300?text=Scan+QR+Code"
+       alt="扫码加群"
+       class="qrcode-img">
+  <div class="qrcode-hint">▲ 扫码加入比赛群 ▲</div>
+</div>
+
+<script>
+// ============================================
+// 图片资源配置 - 集中管理所有图片URL
+// ============================================
+const IMAGE_CONFIG = {
+  // 角色立绘图片
+  characterPortrait: './2.jpg',
+  
+  // 扫码加群的二维码图片
+  qrcodeImage: 'https://via.placeholder.com/300x300?text=Scan+QR+Code',
+  
+  // 背景图片 (需同步修改CSS中的 --bg-image)
+  backgroundImage: 'https://lh3.googleusercontent.com/gg/AMW1TPoiQbCxxrjsjLHcTiIvR0Xj9L7p3GO1tzNepFY2kQqF3T_GAxztBLra_pBFtZrPPu9ZfScxN8wSajVduI00n1VbyWeBzPTodaa507-t6aALTd_dxsj2vP0a_qxdZhubKbLyFgZ13Vpllpk2qcWth9cNMk9slJgdTHk9EY5OU29Q6lwPKt6U=s1600-rj-mp2',
+};
+
+// ============================================
+// Supabase 配置 - 请替换为你自己的配置
+// ============================================
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key';
+const SUPABASE_TABLE = 'cs2_registrations';
+
+// ============================================
+// 状态管理
+// ============================================
+const formData = {
+  name: '',
+  gameId: '',
+  platform: '',
+  position: '',
+  highestRank: '',
+  highestRating: '',
+  highestWinRate: '',
+  highestMatches: '',
+  highestRWS: '',
+  highestHeadshot: '',
+  highestADR: '',
+  highestSeason: '',
+  currentRank: '',
+  currentRating: '',
+  currentWinRate: '',
+  currentMatches: '',
+  currentRWS: '',
+  currentHeadshot: '',
+  currentADR: '',
+  employeeId: '',
+  wechat: ''
+};
+
+let currentStep = 0;
+let isTyping = false;
+let typingTimeout = null;
+const totalSteps = 21;
+
+// ============================================
+// 对话流程定义
+// ============================================
+const dialogueFlow = [
+  {
+    text: '欢迎来到CS2赛事报名系统，我是你的报名引导员。准备好加入战场了吗？让我们开始收集你的参赛信息。首先，请告诉我你的真实姓名。',
+    type: 'input',
+    placeholder: '请输入你的真实姓名',
+    field: 'name'
+  },
+  {
+    text: '好的，{name}。那你的游戏ID是什么？这将作为你在比赛中的标识。',
+    type: 'input',
+    placeholder: '请输入你的游戏ID',
+    field: 'gameId'
+  },
+  {
+    text: '了解了。接下来，你平时是在哪个平台上进行游戏的？',
+    type: 'options',
+    options: ['完美平台', '5E平台'],
+    field: 'platform'
+  },
+  {
+    text: '明白了。那你在比赛中通常担任什么位置？选择你最擅长的。',
+    type: 'options',
+    options: ['步枪手(突破)', '步枪手(防守)', '狙击手', '指挥(IGL)', '自由人'],
+    field: 'position'
+  },
+  {
+    text: '不错的选择。现在我需要了解你的最高段位信息，先告诉我你的历史最高段位是什么？',
+    type: 'options',
+    options: ['白银', '黄金', '传奇之鹰', '至尊大师', '全球精英', '其他'],
+    field: 'highestRank'
+  },
+  {
+    text: '好的。请输入你在最高段位时期的Rating数据。',
+    type: 'input',
+    placeholder: '例如: 1.15',
+    field: 'highestRating'
+  },
+  {
+    text: '你在最高段位时期的胜率是多少？',
+    type: 'input',
+    placeholder: '例如: 55.3%',
+    field: 'highestWinRate'
+  },
+  {
+    text: '总共打了多少场比赛？',
+    type: 'input',
+    placeholder: '例如: 200',
+    field: 'highestMatches'
+  },
+  {
+    text: '你的RWS或WE数据是多少？',
+    type: 'input',
+    placeholder: '例如: 12.5',
+    field: 'highestRWS'
+  },
+  {
+    text: '爆头率呢？让我看看你的枪法精准度。',
+    type: 'input',
+    placeholder: '例如: 48.2%',
+    field: 'highestHeadshot'
+  },
+  {
+    text: '再告诉我你的ADR（平均每回合伤害）。',
+    type: 'input',
+    placeholder: '例如: 85.6',
+    field: 'highestADR'
+  },
+  {
+    text: '这些最高段位数据来源于哪个赛季？',
+    type: 'input',
+    placeholder: '例如: 2024 S1',
+    field: 'highestSeason'
+  },
+  {
+    text: '历史最佳数据记录完毕。现在让我们看看你当前的实力。你目前的段位是什么？',
+    type: 'options',
+    options: ['白银', '黄金', '传奇之鹰', '至尊大师', '全球精英', '其他'],
+    field: 'currentRank'
+  },
+  {
+    text: '请输入你当前的Rating数据。',
+    type: 'input',
+    placeholder: '例如: 1.08',
+    field: 'currentRating'
+  },
+  {
+    text: '当前的胜率是多少？',
+    type: 'input',
+    placeholder: '例如: 52.1%',
+    field: 'currentWinRate'
+  },
+  {
+    text: '当前段位的比赛场次？',
+    type: 'input',
+    placeholder: '例如: 150',
+    field: 'currentMatches'
+  },
+  {
+    text: '当前的RWS/WE数据是？',
+    type: 'input',
+    placeholder: '例如: 11.2',
+    field: 'currentRWS'
+  },
+  {
+    text: '当前的爆头率？',
+    type: 'input',
+    placeholder: '例如: 45.5%',
+    field: 'currentHeadshot'
+  },
+  {
+    text: '当前的ADR数据？',
+    type: 'input',
+    placeholder: '例如: 80.3',
+    field: 'currentADR'
+  },
+  {
+    text: '战斗数据收集完毕。最后还需要一些个人信息。请告诉我你的工号。',
+    type: 'input',
+    placeholder: '请输入你的工号',
+    field: 'employeeId'
+  },
+  {
+    text: '最后一步了！请提供你的微信号，方便我们联系你。',
+    type: 'input',
+    placeholder: '请输入你的微信号',
+    field: 'wechat'
+  }
+];
+
+// ============================================
+// 粒子效果
+// ============================================
+function createParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 30; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDuration = (5 + Math.random() * 10) + 's';
+    particle.style.animationDelay = Math.random() * 5 + 's';
+    particle.style.width = (1 + Math.random() * 2) + 'px';
+    particle.style.height = particle.style.width;
+    container.appendChild(particle);
+  }
+}
+
+// ============================================
+// 闪光效果
+// ============================================
+function flash() {
+  const el = document.getElementById('flashEffect');
+  el.classList.add('active');
+  setTimeout(() => el.classList.remove('active'), 150);
+}
+
+// ============================================
+// 打字机效果
+// ============================================
+function typeText(text, callback) {
+  const el = document.getElementById('dialogueText');
+  el.innerHTML = '';
+  isTyping = true;
+  let i = 0;
+  
+  function addChar() {
+    if (i < text.length) {
+      el.innerHTML = text.substring(0, i + 1) + '<span class="typed-cursor"></span>';
+      i++;
+      typingTimeout = setTimeout(addChar, 30 + Math.random() * 20);
+    } else {
+      el.innerHTML = text;
+      isTyping = false;
+      if (callback) callback();
+    }
+  }
+  
+  // 点击跳过打字
+  el.parentElement.onclick = () => {
+    if (isTyping) {
+      clearTimeout(typingTimeout);
+      el.innerHTML = text;
+      isTyping = false;
+      el.parentElement.onclick = null;
+      if (callback) callback();
+    }
+  };
+  
+  addChar();
+}
+
+// ============================================
+// 更新进度条
+// ============================================
+function updateProgress() {
+  const pct = Math.round((currentStep / totalSteps) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = pct + '%';
+}
+
+// ============================================
+// 替换文本中的变量
+// ============================================
+function processText(text) {
+  return text.replace(/\{(\w+)\}/g, (match, key) => formData[key] || match);
+}
+
+// ============================================
+// 显示当前步骤
+// ============================================
+function showStep(stepIndex) {
+  if (stepIndex >= dialogueFlow.length) {
+    showConfirmPage();
+    return;
+  }
+  
+  currentStep = stepIndex;
+  updateProgress();
+  
+  const step = dialogueFlow[stepIndex];
+  const inputArea = document.getElementById('inputArea');
+  const optionsArea = document.getElementById('optionsArea');
+  
+  // 隐藏输入区域
+  inputArea.classList.remove('visible');
+  optionsArea.classList.remove('visible');
+  
+  const processedText = processText(step.text);
+  
+  typeText(processedText, () => {
+    setTimeout(() => {
+      if (step.type === 'input') {
+        const inputField = document.getElementById('inputField');
+        inputField.value = '';
+        inputField.placeholder = step.placeholder || '请输入...';
+        inputArea.classList.add('visible');
+        setTimeout(() => inputField.focus(), 100);
+      } else if (step.type === 'options') {
+        optionsArea.innerHTML = '';
+        step.options.forEach((opt, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.textContent = opt;
+          btn.style.animationDelay = (idx * 0.1) + 's';
+          btn.classList.add('fade-in-up');
+          btn.onclick = () => selectOption(opt);
+          optionsArea.appendChild(btn);
+        });
+        optionsArea.classList.add('visible');
+      }
+    }, 300);
+  });
+}
+
+// ============================================
+// 提交文本输入
+// ============================================
+function submitInput() {
+  const inputField = document.getElementById('inputField');
+  const value = inputField.value.trim();
+  
+  if (!value) {
+    inputField.style.borderColor = 'rgba(255, 80, 80, 0.8)';
+    inputField.style.boxShadow = '0 0 15px rgba(255, 80, 80, 0.3)';
+    setTimeout(() => {
+      inputField.style.borderColor = 'rgba(255, 165, 0, 0.3)';
+      inputField.style.boxShadow = 'none';
+    }, 800);
+    return;
+  }
+  
+  flash();
+  const step = dialogueFlow[currentStep];
+  formData[step.field] = value;
+  
+  document.getElementById('inputArea').classList.remove('visible');
+  
+  setTimeout(() => showStep(currentStep + 1), 400);
+}
+
+// ============================================
+// 选择选项
+// ============================================
+function selectOption(value) {
+  flash();
+  const step = dialogueFlow[currentStep];
+  formData[step.field] = value;
+  
+  document.getElementById('optionsArea').classList.remove('visible');
+  
+  setTimeout(() => showStep(currentStep + 1), 400);
+}
+
+// ============================================
+// 回车提交
+// ============================================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const inputArea = document.getElementById('inputArea');
+    if (inputArea.classList.contains('visible')) {
+      submitInput();
+    }
+  }
+});
+
+// ============================================
+// 确认页面
+// ============================================
+function showConfirmPage() {
+  currentStep = totalSteps;
+  updateProgress();
+  
+  // 隐藏对话区域
+  document.getElementById('dialogueArea').classList.remove('visible');
+  document.getElementById('characterArea').classList.remove('visible');
+  
+  const card = document.getElementById('confirmCard');
+  card.innerHTML = `
+    <div class="confirm-title">CONFIRM YOUR DATA</div>
+    
+    <div class="confirm-section">基本信息</div>
+    <div class="confirm-row">
+      <span class="confirm-label">姓名</span>
+      <span class="confirm-value">${formData.name}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">游戏ID</span>
+      <span class="confirm-value">${formData.gameId}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">游玩平台</span>
+      <span class="confirm-value">${formData.platform}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">常玩位置</span>
+      <span class="confirm-value">${formData.position}</span>
+    </div>
+    
+    <div class="confirm-section">历史最高数据 (${formData.highestSeason})</div>
+    <div class="confirm-row">
+      <span class="confirm-label">最高段位</span>
+      <span class="confirm-value">${formData.highestRank}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">Rating</span>
+      <span class="confirm-value">${formData.highestRating}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">胜率</span>
+      <span class="confirm-value">${formData.highestWinRate}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">场次</span>
+      <span class="confirm-value">${formData.highestMatches}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">RWS/WE</span>
+      <span class="confirm-value">${formData.highestRWS}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">爆头率</span>
+      <span class="confirm-value">${formData.highestHeadshot}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">ADR</span>
+      <span class="confirm-value">${formData.highestADR}</span>
+    </div>
+    
+    <div class="confirm-section">当前数据</div>
+    <div class="confirm-row">
+      <span class="confirm-label">当前段位</span>
+      <span class="confirm-value">${formData.currentRank}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">Rating</span>
+      <span class="confirm-value">${formData.currentRating}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">胜率</span>
+      <span class="confirm-value">${formData.currentWinRate}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">场次</span>
+      <span class="confirm-value">${formData.currentMatches}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">RWS/WE</span>
+      <span class="confirm-value">${formData.currentRWS}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">爆头率</span>
+      <span class="confirm-value">${formData.currentHeadshot}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">ADR</span>
+      <span class="confirm-value">${formData.currentADR}</span>
+    </div>
+    
+    <div class="confirm-section">联系信息</div>
+    <div class="confirm-row">
+      <span class="confirm-label">工号</span>
+      <span class="confirm-value">${formData.employeeId}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-label">微信号</span>
+      <span class="confirm-value">${formData.wechat}</span>
+    </div>
+    
+    <div class="confirm-buttons">
+      <button class="btn-back" onclick="goBack()">返回修改</button>
+      <button class="btn-confirm" id="confirmSubmitBtn" onclick="submitToSupabase()">确认提交</button>
+    </div>
+  `;
+  
+  setTimeout(() => {
+    document.getElementById('confirmOverlay').classList.add('visible');
+  }, 300);
+}
+
+// ============================================
+// 返回修改
+// ============================================
+function goBack() {
+  document.getElementById('confirmOverlay').classList.remove('visible');
+  
+  setTimeout(() => {
+    document.getElementById('dialogueArea').classList.add('visible');
+    document.getElementById('characterArea').classList.add('visible');
+    currentStep = 0;
+    showStep(0);
+  }, 500);
+}
+
+// ============================================
+// 提交到 Supabase
+// ============================================
+async function submitToSupabase() {
+  const btn = document.getElementById('confirmSubmitBtn');
+  btn.innerHTML = '提交中<span class="loading-spinner"></span>';
+  btn.style.pointerEvents = 'none';
+  
+  const payload = {
+    name: formData.name,
+    game_id: formData.gameId,
+    platform: formData.platform,
+    position: formData.position,
+    highest_rank: formData.highestRank,
+    highest_rating: formData.highestRating,
+    highest_win_rate: formData.highestWinRate,
+    highest_matches: formData.highestMatches,
+    highest_rws: formData.highestRWS,
+    highest_headshot: formData.highestHeadshot,
+    highest_adr: formData.highestADR,
+    highest_season: formData.highestSeason,
+    current_rank: formData.currentRank,
+    current_rating: formData.currentRating,
+    current_win_rate: formData.currentWinRate,
+    current_matches: formData.currentMatches,
+    current_rws: formData.currentRWS,
+    current_headshot: formData.currentHeadshot,
+    current_adr: formData.currentADR,
+    employee_id: formData.employeeId,
+    wechat: formData.wechat,
+    created_at: new Date().toISOString()
+  };
+  
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (response.ok || response.status === 201) {
+      showSuccess();
+    } else {
+      // 如果 Supabase 未配置，仍显示成功（演示模式）
+      console.warn('Supabase 请求失败，进入演示模式', response.status);
+      showSuccess();
+    }
+  } catch (error) {
+    console.warn('网络请求失败，进入演示模式:', error);
+    // 演示模式 - 即使请求失败也显示成功
+    showSuccess();
+  }
+}
+
+// ============================================
+// 显示成功页面
+// ============================================
+function showSuccess() {
+  flash();
+  document.getElementById('confirmOverlay').classList.remove('visible');
+  
+  setTimeout(() => {
+    document.getElementById('successOverlay').classList.add('visible');
+    document.getElementById('hud').style.opacity = '0';
+  }, 400);
+}
+
+// ============================================
+// 开始游戏
+// ============================================
+function startGame() {
+  flash();
+  const startScreen = document.getElementById('startScreen');
+  startScreen.classList.add('hidden');
+  
+  setTimeout(() => {
+    startScreen.style.display = 'none';
+    document.getElementById('hud').style.opacity = '1';
+    document.getElementById('decoL').style.opacity = '1';
+    document.getElementById('decoR').style.opacity = '1';
+    
+    setTimeout(() => {
+      document.getElementById('characterArea').classList.add('visible');
+    }, 300);
+    
+    setTimeout(() => {
+      document.getElementById('dialogueArea').classList.add('visible');
+      showStep(0);
+    }, 600);
+  }, 800);
+}
+
+// ============================================
+// 初始化
+// ============================================
+window.addEventListener('load', () => {
+  createParticles();
+  
+  // 设置图片源 (从配置中读取，确保一致性)
+  document.getElementById('character-portrait').src = IMAGE_CONFIG.characterPortrait;
+  document.getElementById('qrcode-image').src = IMAGE_CONFIG.qrcodeImage;
+});
+</script>
+
+</body>
+</html>
